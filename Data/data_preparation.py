@@ -22,6 +22,15 @@ def get_sentence_tokens(filename):
     return token_arr
 
 
+def word_index_mappings():
+    pass
+
+
+def read_embeddings():
+    pass
+    
+
+
 
 if __name__== "__main__":
     sentence_tokens = get_sentence_tokens("Data/Datasets/Conversation.csv")
