@@ -46,24 +46,33 @@ class Ngram:
 
         return suggestion, max_prob
 
+    
     def get_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor=1.0, started_word=None):
-        suggestions = []
-        used_words = set()
-
+        suggestions = {}
+        
         for i in range(len(n_gram_counts_list) - 1):
             n_gram_counts = n_gram_counts_list[i]
             nplus1_gram_counts = n_gram_counts_list[i + 1]
 
-            suggestion, prob = self.complete_word(previous_tokens, n_gram_counts, nplus1_gram_counts, vocabulary,
-                                            smoothing_factor, started_word)
-            
-            # If suggestion already exists, don't suggest it again
-            if suggestion and suggestion not in used_words:
-                suggestions.append((suggestion, prob))
-                used_words.add(suggestion)
+            previous_ngram = previous_tokens[-(i+1):]  # adjust based on n-gram level
+            probabilities = self.return_probabilities(previous_ngram, n_gram_counts, nplus1_gram_counts, vocabulary, smoothing_factor)
 
-        return sorted(suggestions, reverse=True)
+            for word, prob in probabilities.items():
+                if started_word and not word.startswith(started_word):
+                    continue
+                if word not in suggestions or prob > suggestions[word]:
+                    suggestions[word] = prob
 
+        return suggestions
+
+
+def build_vocab(data):
+        vocab = set()
+        for sentence in data:
+            for word in sentence:
+                vocab.add(word)
+        vocab.update(["<eos>", "<unk>"])
+        return vocab
              
 def build_ngram_counts(data, max_n):
     ngram_counts_list = []
@@ -83,12 +92,16 @@ def build_ngram_counts(data, max_n):
         
 if __name__ == '__main__':
     # Test
-    data = [["hi", "there"], ["i", "like", "dogs"]]
+    data = [["hi", "there"], ["i", "like", "dogs", "and", "cats"], ["i", "like", "cats"], ["i", "like", "dog"], ["i", "like", "dogs"], ["i", "like", "dinner"], ["i", "like", "dinner"]]
     ngram_counts_list = build_ngram_counts(data, max_n=5)
-    vocab = {"hi", "there", "i", "like", "dogs", "and", "i", "like", "cats", "<eos>", "<unk>"}
+    vocab = build_vocab(data)
 
     model = Ngram(n=3)
-    suggestions = model.get_suggestions(["i", "like"], ngram_counts_list, vocab, started_word="d")
-    print(suggestions)
+    suggestions_dict = model.get_suggestions(["i", "like"], ngram_counts_list, vocab, started_word="d")
+    print("Suggestions:", suggestions_dict)
+    
+    # Sort by probability (descending)
+    word_candidates = [word for word, _ in sorted(suggestions_dict.items(), key=lambda x: -x[1])]
+    print(word_candidates[:3])
 
     
