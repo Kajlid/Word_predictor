@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
 
 class LSTM(torch.nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, output_size, embeddings, tok2id, id2tok, device=torch.device('cpu')):
@@ -31,9 +32,23 @@ class LSTM(torch.nn.Module):
         logits = self.fc(logits.reshape(-1, self.hidden_size))
         return logits, h_prev, c_prev
 
-    def train_model(self, train_loader, optimizer, criterion, epochs):
+    def train_model(self, train_loader, optimizer, criterion, epochs, val_loader = None, plot_training=False):
+        if plot_training:
+            # For continuous plotting
+            plt.ion()
+            fig, ax = plt.subplots()
+        
+        train_losses = []
+        val_losses = []
+        
+        best_val_loss = float('inf')
+        patience = 2
+        epochs_no_improve = 0
+        
         self.train()
         for epoch in range(epochs):
+            total_loss = 0
+            total_tokens = 0
             for i, (x, y) in enumerate(train_loader):
                 x, y = x.to(self.device), y.to(self.device)
 
@@ -43,15 +58,64 @@ class LSTM(torch.nn.Module):
                 loss = criterion(logits, y.view(-1))
                 loss.backward()
                 optimizer.step()
+                total_loss += loss.item() * y.numel()
+                total_tokens += y.numel()
                 if i % 100 == 0:
                     print(f'Epoch: {epoch+1}/{epochs}, Step: {i+1}/{len(train_loader)}, Loss: {loss.item():.4f}')
+                    
+            avg_train_loss = total_loss / total_tokens
+            train_losses.append(avg_train_loss)
+            
+            if val_loader:
+                self.eval()
+                with torch.no_grad():
+                    val_loss = 0
+                    val_tokens = 0
+                    for x_val, y_val in val_loader:
+                        x_val, y_val = x_val.to(self.device), y_val.to(self.device)
 
-    def predict(self, tokens, k=None):
+                        logits, _, _ = self(x_val)
+                        loss = criterion(logits, y_val.view(-1))
+                        
+                        val_loss += loss.item() * y_val.numel()
+                        val_tokens += y_val.numel()
+                    avg_val_loss = val_loss / val_tokens
+                    val_losses.append(avg_val_loss)
+                    
+                     # Early stopping
+                    if avg_val_loss < best_val_loss:
+                        best_val_loss = avg_val_loss
+                        epochs_no_improve = 0
+                    else:
+                        epochs_no_improve += 1
+                        if epochs_no_improve >= patience:
+                            print("Early stopping triggered.")
+                            break
+            
+            if plot_training:                     
+                # Update plot
+                ax.clear()
+                ax.plot(train_losses, label="Train Loss", color='blue')
+                if val_loader:
+                    ax.plot(val_losses, label="Validation Loss", color='red')
+                ax.set_xlabel("Epoch")
+                ax.set_ylabel("Loss")
+                ax.set_title("Loss Curve")
+                ax.legend()
+                ax.grid(True)
+                plt.pause(0.1)
+                # plt.show()
+
+
+    def predict(self, context_tokens, n_candidates=None):
+        if not context_tokens:
+            context_tokens = ['<sos>']
+            
         self.eval()
         #prime with context tokens
         h, c = self.init_hidden(1)
         with torch.no_grad():
-            for t in tokens:
+            for t in context_tokens:
                 # carry over h and c here
                 idx = self.tok2id.get(t, self.tok2id['<unk>'])
                 x = torch.tensor([[idx]], device=self.device)
@@ -59,16 +123,23 @@ class LSTM(torch.nn.Module):
 
             probs = F.softmax(logits, dim=-1).squeeze(0)  # (V)
 
-        if k is None:
-            k = probs.size(0)
-        topk = torch.topk(probs, k)
+        if n_candidates is None:
+            n_candidates = probs.size(0)
+        topk = torch.topk(probs, n_candidates)
         return [(self.id2tok[idx.item()], topk.values[i].item())
                 for i, idx in enumerate(topk.indices)]
 
     def complete_current_word(self, context_tokens, prefix, k=5):
+        
+        if not context_tokens:
+            context_tokens = ['<sos>']
 
         # P(w | context) for entire vocab
-        probs = dict(self.predict(context_tokens, k=None))
+        probs = dict(self.predict(context_tokens, n_candidates=None))
+        
+        if not prefix:
+            candidates = sorted(probs.items(), key=lambda item: item[1], reverse=True)
+            return candidates[:k]
 
         candidates = [(w, p) for w, p in probs.items() if w.startswith(prefix) and w != prefix]
 
