@@ -18,12 +18,18 @@ def create_dataframe(filename):
 
 
 def get_sentence_tokens(filename):
+    """ Get a list of sentences as lists of tokens for n-gram.
+
+    Args:
+        filename (string): path to raw text dataset.
+
+    Returns:
+        sentence_tokens (list): list of lists of tokens (list of sentences).
+    """
     conv_data = create_dataframe(filename)
     sentence_tokens = conv_data.apply(word_tokenize)     # Lists of tokens
     
-    token_arr = sentence_tokens.to_numpy()
-    
-    return token_arr
+    return sentence_tokens.tolist()
 
 
 def word_index_mappings():
@@ -79,7 +85,8 @@ def collate_full_sentences(batch):
 if __name__== "__main__":
     sentence_tokens = get_sentence_tokens("Data/Datasets/Conversation.csv")
     
-    print(sentence_tokens)
+    print(len(sentence_tokens))
+    print(sentence_tokens[1000])
 
     
     
