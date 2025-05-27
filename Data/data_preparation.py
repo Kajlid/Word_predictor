@@ -13,10 +13,13 @@ def create_dataframe(filename):
     if 'Unnamed: 0' in df.columns:
         df = df.drop(columns=['Unnamed: 0'])
     
-    # Concatenate questions and answers vertically (for creating train and val data)
-    stacked_df = pd.concat([df['question'], df['answer']]).dropna().reset_index(drop=True)
+    if 'answers' in df.columns:
+        df = df.drop(columns=['answers'])
     
-    return stacked_df
+    # Concatenate questions and answers vertically (for creating train and val data)
+    # stacked_df = pd.concat([df['question'], df['answer']]).dropna().reset_index(drop=True)
+    
+    return df.dropna().reset_index(drop=True)
 
 
 def get_sentence_tokens(filename):
@@ -76,16 +79,18 @@ def write_sentences(path, data):
 
 def train_val_split(filename, train_ratio=0.95, seed=42, train_out="conv_train.csv", val_out="conv_val.csv"):
     sentences = create_dataframe(filename)
-            
-    random.seed(seed)
-    random.shuffle(sentences)
+    
+    # Shuffle data
+    sentences = sentences.sample(frac=1, random_state=seed).reset_index(drop=True)
+    # random.seed(seed)
+    # random.shuffle(sentences)
 
     split_idx = int(len(sentences) * train_ratio)
-    train_sentences = sentences[:split_idx]
-    val_sentences = sentences[split_idx:]
+    train_sentences = sentences.iloc[:split_idx]
+    val_sentences = sentences.iloc[split_idx:]
 
-    write_sentences(train_out, train_sentences)
-    write_sentences(val_out, val_sentences)
+    write_sentences(train_out, train_sentences['question'].astype(str))
+    write_sentences(val_out, val_sentences['question'].astype(str))
 
     print(f"Train size: {len(train_sentences)}")
     print(f"Validation size: {len(val_sentences)}")
@@ -122,12 +127,12 @@ def collate_full_sentences(batch):
     return x_padded, y_padded
 
 if __name__== "__main__":
-    sentence_tokens = get_sentence_tokens("Data/Datasets/conv_train.csv")
+    train_val_split("Data/Datasets/Conversation.csv", train_ratio=0.95, seed=42, train_out="Data/Datasets/conv_train.csv", val_out="Data/Datasets/conv_val.csv")
     
-    print(len(sentence_tokens))
-    print(sentence_tokens[1000])
+    # sentence_tokens = get_sentence_tokens("Data/Datasets/conv_train.csv")
     
-    #train_val_split("Data/Datasets/Conversation.csv", train_ratio=0.95, seed=42, train_out="Data/Datasets/conv_train.csv", val_out="Data/Datasets/conv_val.csv")
+    # print(len(sentence_tokens))
+    # print(sentence_tokens[1000])
     
 
     
