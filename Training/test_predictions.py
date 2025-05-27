@@ -51,8 +51,8 @@ def evaluate_saved_keystrokes(model, sentences, k_full=3, k_char=3):
                 full_suggestions = [model.id2tok[idx.item()] for idx in topk_full.indices]
 
                 if word in full_suggestions:
-                    saved_keystrokes += len(word)
-                    saved_in_sentence += len(word)
+                    saved_keystrokes += len(word) - 1  # clicking on a suggestion costs as much as typing a letter
+                    saved_in_sentence += len(word) - 1
                     continue
 
                 for j in range(1, len(word) + 1):
@@ -67,8 +67,8 @@ def evaluate_saved_keystrokes(model, sentences, k_full=3, k_char=3):
                     topk_prefix = sorted(filtered, key=lambda x: x[1], reverse=True)[:min(k_char, len(filtered))]
 
                     if word in [w for w, _ in topk_prefix]:
-                        saved_keystrokes += len(word) - j
-                        saved_in_sentence += len(word) - j
+                        saved_keystrokes += len(word) - j - 1
+                        saved_in_sentence += len(word) - j - 1 
                         break
                     
             saved_keystrokes_per_sentence.append(saved_in_sentence)
