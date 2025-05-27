@@ -71,7 +71,7 @@ class Ngram:
         return suggestions
     
     def get_top_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, k=3, smoothing_factor=1.0, started_word=None):
-        suggestions_dict = model.get_all_suggestions(previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor, started_word)
+        suggestions_dict = self.get_all_suggestions(previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor, started_word)
 
         # Sort by probability (descending)
         word_candidates = [word for word, _ in sorted(suggestions_dict.items(), key=lambda x: -x[1])]
@@ -79,38 +79,37 @@ class Ngram:
         return word_candidates[:k]
 
 
-def build_vocab(data):
-        vocab = set()
-        for sentence in data:
-            for word in sentence:
-                vocab.add(word)
-        vocab.update(["<eos>", "<unk>"])
-        return vocab
+    def build_vocab(self, data):
+            vocab = set()
+            for sentence in data:
+                for word in sentence:
+                    vocab.add(word)
+            vocab.update(["<eos>", "<unk>"])
+            return vocab
              
-def build_ngram_counts(data, max_n):
-    ngram_counts_list = []
-    
-    for n in range(1, max_n + 1):
-        counts = defaultdict(int)
-        for sentence in data:
-            padded = ["<s>"] * (n - 1) + sentence + ["<eos>"]
-            for i in range(len(padded) - n + 1):
-                ngram = tuple(padded[i:i+n])
-                counts[ngram] += 1
-        ngram_counts_list.append(counts)
-    
-    return ngram_counts_list
-
+    def build_ngram_counts(self, data, max_n):
+        ngram_counts_list = []
         
+        for n in range(1, max_n + 1):
+            counts = defaultdict(int)
+            for sentence in data:
+                padded = ["<s>"] * (n - 1) + sentence + ["<eos>"]
+                for i in range(len(padded) - n + 1):
+                    ngram = tuple(padded[i:i+n])
+                    counts[ngram] += 1
+            ngram_counts_list.append(counts)
+        
+        return ngram_counts_list
+
         
 if __name__ == '__main__':
     # Test
     # data = [["hi", "there"], ["i", "like", "dogs", "and", "cats"], ["i", "like", "cats"], ["i", "like", "dog"], ["i", "like", "dogs"], ["i", "like", "dinner"], ["i", "like", "dinner"]]
     data = get_sentence_tokens("Data/Datasets/conv_train.csv")
-    ngram_counts_list = build_ngram_counts(data, max_n=5)
-    vocab = build_vocab(data)
-
     model = Ngram(n=3)
+    
+    ngram_counts_list = model.build_ngram_counts(data, max_n=5)
+    vocab = model.build_vocab(data)
     
     word_candidates = model.get_top_suggestions(['are', 'you', 'going'], ngram_counts_list, vocab, k=5, started_word="")
     print(word_candidates)
