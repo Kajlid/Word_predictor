@@ -1,7 +1,12 @@
 from collections import defaultdict
 import math
 import numpy as np
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from Data.data_preparation import get_sentence_tokens
+                                   
 class Ngram:
     def __init__(self, n):
         self.n = n
@@ -92,15 +97,21 @@ def build_ngram_counts(data, max_n):
         
 if __name__ == '__main__':
     # Test
-    data = [["hi", "there"], ["i", "like", "dogs", "and", "cats"], ["i", "like", "cats"], ["i", "like", "dog"], ["i", "like", "dogs"], ["i", "like", "dinner"], ["i", "like", "dinner"]]
+    # data = [["hi", "there"], ["i", "like", "dogs", "and", "cats"], ["i", "like", "cats"], ["i", "like", "dog"], ["i", "like", "dogs"], ["i", "like", "dinner"], ["i", "like", "dinner"]]
+    data = get_sentence_tokens("Data/Datasets/conv_train.csv")
     ngram_counts_list = build_ngram_counts(data, max_n=5)
     vocab = build_vocab(data)
 
     model = Ngram(n=3)
-    suggestions_dict = model.get_suggestions(["i", "like"], ngram_counts_list, vocab, started_word="d")
-    print("Suggestions:", suggestions_dict)
+    suggestions_dict = model.get_suggestions(['are', 'you', 'going'], ngram_counts_list, vocab, started_word="")
+    # print("Suggestions:", suggestions_dict)
     
     # Sort by probability (descending)
+    word_candidates = [word for word, _ in sorted(suggestions_dict.items(), key=lambda x: -x[1])]
+    print(word_candidates[:3])
+    
+    suggestions_dict = model.get_suggestions(['are', 'you'], ngram_counts_list, vocab, started_word="")
+    
     word_candidates = [word for word, _ in sorted(suggestions_dict.items(), key=lambda x: -x[1])]
     print(word_candidates[:3])
 
