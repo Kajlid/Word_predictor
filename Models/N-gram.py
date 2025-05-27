@@ -52,7 +52,7 @@ class Ngram:
         return suggestion, max_prob
 
     
-    def get_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor=1.0, started_word=None):
+    def get_all_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor=1.0, started_word=None):
         suggestions = {}
         
         for i in range(len(n_gram_counts_list) - 1):
@@ -69,6 +69,14 @@ class Ngram:
                     suggestions[word] = prob
 
         return suggestions
+    
+    def get_top_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, k=3, smoothing_factor=1.0, started_word=None):
+        suggestions_dict = model.get_all_suggestions(previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor, started_word)
+
+        # Sort by probability (descending)
+        word_candidates = [word for word, _ in sorted(suggestions_dict.items(), key=lambda x: -x[1])]
+        
+        return word_candidates[:k]
 
 
 def build_vocab(data):
@@ -103,16 +111,11 @@ if __name__ == '__main__':
     vocab = build_vocab(data)
 
     model = Ngram(n=3)
-    suggestions_dict = model.get_suggestions(['are', 'you', 'going'], ngram_counts_list, vocab, started_word="")
-    # print("Suggestions:", suggestions_dict)
     
-    # Sort by probability (descending)
-    word_candidates = [word for word, _ in sorted(suggestions_dict.items(), key=lambda x: -x[1])]
-    print(word_candidates[:3])
+    word_candidates = model.get_top_suggestions(['are', 'you', 'going'], ngram_counts_list, vocab, k=5, started_word="")
+    print(word_candidates)
     
-    suggestions_dict = model.get_suggestions(['are', 'you'], ngram_counts_list, vocab, started_word="")
-    
-    word_candidates = [word for word, _ in sorted(suggestions_dict.items(), key=lambda x: -x[1])]
-    print(word_candidates[:3])
+    word_candidates = model.get_top_suggestions(['are', 'you'], ngram_counts_list, vocab, k=5, started_word="")
+    print(word_candidates)
 
     
