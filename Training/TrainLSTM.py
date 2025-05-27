@@ -47,8 +47,8 @@ def main():
 
     model = LSTM(input_size, hidden_size, num_layers, output_size, embeddings, tok2id, id2tok, device=device)
 
-    model.train_model(train_loader, Adam(model.parameters(), lr=0.0001, weight_decay=1e-6), torch.nn.CrossEntropyLoss(), epochs, val_loader, plot_training=True)
-    file_path = 'lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4_L2_1e-6.pth'
+    model.train_model(train_loader, Adam(model.parameters(), lr=0.0001, weight_decay=1e-5), torch.nn.CrossEntropyLoss(), epochs, val_loader, plot_training=True)
+    file_path = 'lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4_L2_1e-5.pth'
     torch.save(model.state_dict(), file_path)
     print(f"Model saved to {file_path}")
     start = timeit.default_timer()

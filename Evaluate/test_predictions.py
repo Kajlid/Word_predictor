@@ -129,7 +129,7 @@ def evaluate_saved_keystrokes_ngram(ngram_model, sentences, ngram_counts_list, v
 if __name__ == '__main__':
     tok2id, id2tok = word_index_mappings()
     embeddings = read_embeddings('Data/glove.6B.50d.txt', tok2id, 50)
-    saved_model = torch.load('lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4_L2_1e-6.pth')
+    saved_model = torch.load('lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4_L2_1e-5.pth')
 
     model = LSTM(
         input_size=50,
