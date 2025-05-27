@@ -106,43 +106,56 @@ class LSTM(torch.nn.Module):
                 plt.pause(0.1)
                 # plt.show()
 
+    def _prime_model(self, context_tokens):
 
-    def predict(self, context_tokens, n_candidates=None):
         if not context_tokens:
             context_tokens = ['<sos>']
-            
-        self.eval()
-        #prime with context tokens
+
         h, c = self.init_hidden(1)
+        for t in context_tokens:
+            # carry over h and c here
+            idx = self.tok2id.get(t, self.tok2id['<unk>'])
+            x = torch.tensor([[idx]], device=self.device)
+            logits, h, c = self(x, h, c)
+
+        return logits, h, c
+
+    def predict(self, context_tokens, n_candidates=None):
+        self.eval()
         with torch.no_grad():
-            for t in context_tokens:
-                # carry over h and c here
-                idx = self.tok2id.get(t, self.tok2id['<unk>'])
-                x = torch.tensor([[idx]], device=self.device)
-                logits, h, c = self(x, h, c)
+            logits, h, c = self._prime_model(context_tokens)
 
             probs = F.softmax(logits, dim=-1).squeeze(0)  # (V)
 
-        if n_candidates is None:
-            n_candidates = probs.size(0)
-        topk = torch.topk(probs, n_candidates)
-        return [(self.id2tok[idx.item()], topk.values[i].item())
-                for i, idx in enumerate(topk.indices)]
+            if n_candidates is None:
+                n_candidates = probs.size(0)
+            topk = torch.topk(probs, n_candidates)
+            return [(self.id2tok[idx.item()], topk.values[i].item())
+                    for i, idx in enumerate(topk.indices)]
 
     def complete_current_word(self, context_tokens, prefix, k=5):
         
         if not context_tokens:
             context_tokens = ['<sos>']
 
-        # P(w | context) for entire vocab
-        probs = dict(self.predict(context_tokens, n_candidates=None))
-        
-        if not prefix:
-            candidates = sorted(probs.items(), key=lambda item: item[1], reverse=True)
-            return candidates[:k]
+        with torch.no_grad():
 
-        candidates = [(w, p) for w, p in probs.items() if w.startswith(prefix) and w != prefix]
+            logits, h, c = self._prime_model(context_tokens)
+            probs = F.softmax(logits.squeeze(0), dim=-1)
 
-        candidates.sort(key=lambda cand: cand[1], reverse=True)
+            mask = torch.zeros_like(probs, dtype=torch.bool)
+            for id, tok in enumerate(self.id2tok):
+                if tok.startswith(prefix) and tok != prefix:
+                    mask[id] = True
 
-        return candidates[:k]
+
+            NEG_INF = -1e9
+            # the ~ flips the boolean tensor.
+            masked = probs.masked_fill(~mask, NEG_INF)  # [V]
+
+            top_vals, top_ids = torch.topk(masked, min(k, mask.sum().item()))
+
+        return [(self.id2tok[i], top_vals[j].item())
+                for j, i in enumerate(top_ids)]
+
+
