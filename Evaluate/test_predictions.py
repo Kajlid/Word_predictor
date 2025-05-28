@@ -36,22 +36,24 @@ def evaluate_saved_keystrokes_lstm(model, sentences, k_full=3, k_char=3):
                 continue
             
             # full sentence excluding the last word (for prediction)
-            input_tokens = ['<sos>'] + sent[:-1]
+            input_tokens = sent[:-1]
+
             input_ids = [model.tok2id.get(t, model.tok2id['<unk>']) for t in input_tokens]
             x = torch.tensor([input_ids], device=model.device)
 
             logits, _, _ = model(x)  # shape: (1, T, V)
             logits = logits.squeeze(0)  # shape: (T, V)
             probs = F.softmax(logits, dim=-1)
-
+            print(probs.shape)
             saved_in_sentence = 0
             for i, word in enumerate(sent):
                 word_probs = probs[i]  # shape: (V,)
                 vocab_size = word_probs.shape[0]
-                topk_full = torch.topk(word_probs, min(k_full, vocab_size))
+                topk_full = torch.topk(word_probs, min(k_full, vocab_size), dim=-1)
                 full_suggestions = [model.id2tok[idx.item()] for idx in topk_full.indices]
 
                 if word in full_suggestions:
+
                     saved_keystrokes += len(word) - 1  # clicking on a suggestion costs as much as typing a letter
                     saved_in_sentence += len(word) - 1
                     continue

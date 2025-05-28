@@ -1,4 +1,3 @@
-from GUI import GUI
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -6,7 +5,8 @@ import tkinter as tk
 from Models.LSTM import LSTM
 from Data.data_preparation import word_index_mappings, read_embeddings
 import torch
-
+from datasets import load_dataset
+from nltk import word_tokenize
 import tkinter as tk
 import torch.nn.functional as F
 
@@ -131,13 +131,45 @@ class SMSPredictorApp:
 
 
 if __name__ == "__main__":
-    tok2id, id2tok = word_index_mappings()
+
+    train_data = load_dataset('lm1b', split='train[:100000]', trust_remote_code=True)
+    train_sentences = train_data.map(
+        lambda ex: {
+            "tokens": ["<sos>"]
+                      + word_tokenize(ex["text"].lower())
+                      + ["<eos>"]
+        },
+        remove_columns=["text"]
+    )
+    train_sentences = train_sentences.filter(lambda ex: len(ex["tokens"]) <= 60)
+
+    from collections import Counter
+
+    # 1) Count all tokens
+    ctr = Counter(w for ex in train_sentences for w in ex["tokens"])
+    total_tokens = sum(ctr.values())
+
+    # 2) Walk down the sorted list until we hit our coverage target
+    coverage_target = 0.80
+    cumulative = 0
+    most_common = []
+    for tok, freq in ctr.most_common():  # sorted descending by freq
+        cumulative += freq
+        most_common.append(tok)
+        if cumulative / total_tokens >= coverage_target:
+            break
+
+    # 3) Build your vocab
+    specials = ["<unk>", "<pad>"]
+    id2tok = specials + most_common
+    tok2id = {w: i for i, w in enumerate(id2tok)}
+
     embeddings = read_embeddings('Data/glove.6B.50d.txt', tok2id, 50)
-    saved_model = torch.load('lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4.pth')
+    saved_model = torch.load('lstm_model_10_epochs_input50_numlayers2_hidden512_lr0.0001_batchsize64_L2_1e-6.pth')
 
     model = LSTM(
         input_size=50,
-        hidden_size=128,
+        hidden_size=512,
         num_layers=2,
         output_size=len(id2tok),
         embeddings=embeddings,

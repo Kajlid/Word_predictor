@@ -24,7 +24,7 @@ class LSTM(torch.nn.Module):
 
 
     def forward(self, x, h_prev=None, c_prev=None):
-        x = x.to(self.device)
+
         if h_prev is None or c_prev is None:
             h_prev, c_prev = self.init_hidden(x.size(0))
         emb = self.embedding(x)
@@ -45,8 +45,9 @@ class LSTM(torch.nn.Module):
         patience = 2
         epochs_no_improve = 0
         
-        self.train()
+
         for epoch in range(epochs):
+            self.train()
             total_loss = 0
             total_tokens = 0
             for i, (x, y) in enumerate(train_loader):
@@ -58,10 +59,11 @@ class LSTM(torch.nn.Module):
                 loss = criterion(logits, y.view(-1))
                 loss.backward()
                 optimizer.step()
-                total_loss += loss.item() * y.numel()
-                total_tokens += y.numel()
-                if i % 100 == 0:
-                    print(f'Epoch: {epoch+1}/{epochs}, Step: {i+1}/{len(train_loader)}, Loss: {loss.item():.4f}')
+                total_loss += loss.item()
+                tokens_this_batch = (y.view(-1) != 1).sum().item()
+                total_tokens += tokens_this_batch
+                if i % 1000 == 0:
+                    print(f'Epoch: {epoch+1}/{epochs}, Step: {i+1}/{len(train_loader)}, Loss: {loss.item()/tokens_this_batch:.4f}')
                     
             avg_train_loss = total_loss / total_tokens
             train_losses.append(avg_train_loss)
@@ -77,12 +79,14 @@ class LSTM(torch.nn.Module):
                         logits, _, _ = self(x_val)
                         loss = criterion(logits, y_val.view(-1))
                         
-                        val_loss += loss.item() * y_val.numel()
-                        val_tokens += y_val.numel()
+                        val_loss += loss.item()
+                        val_tokens += (y_val.view(-1) != 1).sum().item()
                     avg_val_loss = val_loss / val_tokens
                     val_losses.append(avg_val_loss)
-                    
-                     # Early stopping
+                    print(
+                        f'Epoch: {epoch + 1}/{epochs}, Validation Loss: {avg_val_loss:.4f}, Train Loss: {avg_train_loss:.4f} \n')
+
+                    # Early stopping
                     if avg_val_loss < best_val_loss:
                         best_val_loss = avg_val_loss
                         epochs_no_improve = 0
