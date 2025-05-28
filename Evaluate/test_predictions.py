@@ -42,20 +42,22 @@ def evaluate_saved_keystrokes_lstm(model, sentences, k_full=3, k_char=3):
             x = torch.tensor([input_ids], device=model.device)
 
             logits, _, _ = model(x)  # shape: (1, T, V)
-            logits = logits.squeeze(0)  # shape: (T, V)
+            #logits = logits.squeeze(0)  # shape: (T, V)
             probs = F.softmax(logits, dim=-1)
-            print(probs.shape)
+
+
             saved_in_sentence = 0
-            for i, word in enumerate(sent):
+            for i, word in enumerate(sent[1:]):
+                #print(word)
                 word_probs = probs[i]  # shape: (V,)
                 vocab_size = word_probs.shape[0]
                 topk_full = torch.topk(word_probs, min(k_full, vocab_size), dim=-1)
                 full_suggestions = [model.id2tok[idx.item()] for idx in topk_full.indices]
 
                 if word in full_suggestions:
-
-                    saved_keystrokes += len(word) - 1  # clicking on a suggestion costs as much as typing a letter
-                    saved_in_sentence += len(word) - 1
+                    #print(f'Saved: {word}!')
+                    saved_keystrokes += len(word)  # clicking on a suggestion costs as much as typing a letter
+                    saved_in_sentence += len(word)
                     continue
 
                 for j in range(1, len(word) + 1):
@@ -70,11 +72,13 @@ def evaluate_saved_keystrokes_lstm(model, sentences, k_full=3, k_char=3):
                     topk_prefix = sorted(filtered, key=lambda x: x[1], reverse=True)[:min(k_char, len(filtered))]
 
                     if word in [w for w, _ in topk_prefix]:
-                        saved_keystrokes += len(word) - j - 1
-                        saved_in_sentence += len(word) - j - 1 
+                        #print(f'Saved: {word[:j]} {word[j:]}!')
+                        saved_keystrokes += len(word) - j
+                        saved_in_sentence += len(word) - j
                         break
-                    
+            #print(saved_in_sentence)
             saved_keystrokes_per_sentence.append(saved_in_sentence)
+            #exit()
     
     # total_keystrokes: what a user would have typed without suggestions
     # saved_keystrokes: how many keystrokes were actually avoided
