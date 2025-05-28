@@ -1,31 +1,52 @@
-from GUI import GUI
+import tkinter as tk
+import torch.nn.functional as F
+import torch
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tkinter as tk
-from Models.LSTM import LSTM
-from Data.data_preparation import word_index_mappings, read_embeddings
-import torch
+from tkinter import ttk
 
-import tkinter as tk
-import torch.nn.functional as F
+from GUI import GUI
+from Models.LSTM import LSTM
+from Models.Ngram import Ngram
+from Data.data_preparation import word_index_mappings, read_embeddings, get_sentence_tokens
 
 class SMSPredictorApp:
-    def __init__(self, model, nr_suggestions=3):
-        self.model  = model
+    def __init__(self, lstm_model, ngram_model=None, ngram_counts=None, vocab=None, nr_suggestions=3):
+        self.lstm_model = lstm_model
+        self.ngram_model = ngram_model
+        self.ngram_counts = ngram_counts
+        self.vocab = vocab
         self.nr_suggestions = nr_suggestions
 
         # Main window
         self.root = tk.Tk()
         self.root.title("SMS Word Predictor")
         self.root.geometry("360x640")  # phone-like aspect
+        
+        # Dropdown model choice
+        dropdown_frame = tk.Frame(self.root, bg="#ECE5DD")
+        dropdown_frame.pack(fill="x", padx=8, pady=5)
+
+        self.model_var = tk.StringVar(value="Choose a model")
+        self.model_dropdown = ttk.OptionMenu(
+            dropdown_frame,
+            self.model_var,
+            "Choose a model",
+            "LSTM",
+            "Bigram",
+            "Trigram",
+            command=lambda _: self.on_model_change()  # trigger logic when changed
+        )
+        self.model_dropdown.pack(side="right")
 
         # Chat history (scrollable)
         self.chat_frame = tk.Frame(self.root, bg="#ECE5DD")
         self.chat_frame.pack(fill="both", expand=True)
-        self.canvas    = tk.Canvas(self.chat_frame, bg="#ECE5DD", highlightthickness=0)
+        self.canvas = tk.Canvas(self.chat_frame, bg="#ECE5DD", highlightthickness=0)
         self.scrollbar = tk.Scrollbar(self.chat_frame, orient="vertical", command=self.canvas.yview)
-        self.inner     = tk.Frame(self.canvas, bg="#ECE5DD")
+        self.inner = tk.Frame(self.canvas, bg="#ECE5DD")
         self.inner.bind(
             "<Configure>",
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -35,12 +56,19 @@ class SMSPredictorApp:
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
-        self.entry      = tk.Entry(self.root, font=("Helvetica", 16))
+        self.entry = tk.Entry(self.root, font=("Helvetica", 16), fg="grey")
         self.entry.pack(fill="x", padx=8, pady=(4,0))
         self.entry.bind("<KeyRelease>", self.on_key)
+        self.entry.insert(0, "Write something here")
+        self.entry.bind("<FocusIn>", self.clear_placeholder)
+        self.entry.bind("<FocusOut>", self.add_placeholder)
+        self.placeholder_text = "Write something here"
+        self.placeholder_active = True
 
         self.sugg_frame = tk.Frame(self.root, bg="#f0f0f0")
-        self.sugg_frame.pack(fill="x", padx=8, pady=(0,8))
+        # self.sugg_frame.pack(fill="x", padx=8, pady=(0,8))
+        
+        self.entry.bind("<Button-1>", self.on_entry_click)
 
 
         self.buttons = []
@@ -61,19 +89,47 @@ class SMSPredictorApp:
             return toks[:-1], toks[-1]
         else:
             return [], ""
+        
+    def clear_placeholder(self, event=None):
+        if self.placeholder_active:
+            self.entry.delete(0, tk.END)
+            self.entry.config(fg="black")
+            self.placeholder_active = False
+
+    def add_placeholder(self, event=None):
+        if not self.entry.get():
+            self.entry.insert(0, self.placeholder_text)
+            self.entry.config(fg="grey")
+            self.placeholder_active = True
+
 
     def update_suggestions(self):
-        text = self.entry.get().lower()
+        if self.model_var.get() == "Choose a model":
+            return   # skip suggestion update if a model is not selected
+        
+        text = self.entry.get().lower()  
         context, prefix = self.split_input(text)
-
-        if prefix == "":
-            raw = self.model.predict(context, self.nr_suggestions)
-        else:
-            raw = self.model.complete_current_word(context, prefix, self.nr_suggestions)
-
-        # filter out special tokens
+        
         specials = {'<pad>','<unk>','<sos>','<eos>'}
-        suggs = [w for w,_ in raw if w not in specials]
+        selected_model = self.model_var.get()
+
+        if selected_model == "LSTM":
+            if prefix == "":
+                raw = self.lstm_model.predict(context, self.nr_suggestions)
+            else:
+                raw = self.lstm_model.complete_current_word(context, prefix, self.nr_suggestions)
+
+            # filter out special tokens
+            suggs = [w for w,_ in raw if w not in specials]
+            
+        elif selected_model in ("Bigram", "Trigram"):
+            ngram_level = 2 if selected_model == "Bigram" else 3
+            if prefix == "":
+                suggs = self.ngram_model.get_top_suggestions(context, self.ngram_counts[:ngram_level], self.vocab, k=self.nr_suggestions)
+            else:
+                suggs = self.ngram_model.get_top_suggestions(context, self.ngram_counts[:ngram_level], self.vocab, k=self.nr_suggestions, started_word=prefix)
+        else:
+            suggs = []
 
 
         for i, b in enumerate(self.buttons):
@@ -100,7 +156,24 @@ class SMSPredictorApp:
         self.canvas.update_idletasks()
         self.canvas.yview_moveto(1.0)
 
+    def on_entry_click(self, event=None):
+        if self.model_var.get() != "Choose a model":
+            self.sugg_frame.pack(fill="x", padx=8, pady=(0,8))
+
+    def on_model_change(self):
+        if self.model_var.get() == "Choose a model":
+            for b in self.buttons:
+                b.config(state="disabled", text="")
+                
+            self.sugg_frame.pack_forget()
+        else:
+            for b in self.buttons:
+                b.config(state="normal")
+            self.update_suggestions()
+
     def on_key(self, event=None):
+        if self.placeholder_active:
+            return
         if event and event.keysym == "Return":
             msg = self.entry.get().strip()
             if msg:
@@ -133,9 +206,11 @@ class SMSPredictorApp:
 if __name__ == "__main__":
     tok2id, id2tok = word_index_mappings()
     embeddings = read_embeddings('Data/glove.6B.50d.txt', tok2id, 50)
-    saved_model = torch.load('lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4.pth')
+    
+    # Load LSTM model
+    saved_model = torch.load('lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4_L2_1e-5.pth')
 
-    model = LSTM(
+    lstm_model = LSTM(
         input_size=50,
         hidden_size=128,
         num_layers=2,
@@ -146,8 +221,14 @@ if __name__ == "__main__":
         device=torch.device('mps'),
     )
 
-    model.load_state_dict(saved_model)
+    lstm_model.load_state_dict(saved_model)
+    
+    # Load Ngram model
+    data = get_sentence_tokens("Data/Datasets/conv_train.csv")
+    ngram_model = Ngram(n=2)
+    ngram_counts = ngram_model.build_ngram_counts(data, max_n=5)
+    vocab = ngram_model.build_vocab(data)
 
-    app = SMSPredictorApp(model, 3)
+    app = SMSPredictorApp(lstm_model, ngram_model=ngram_model, ngram_counts=ngram_counts, vocab=vocab, nr_suggestions=3)
 
     app.run()
