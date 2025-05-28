@@ -59,7 +59,7 @@ class Ngram:
             n_gram_counts = n_gram_counts_list[i]
             nplus1_gram_counts = n_gram_counts_list[i + 1]
 
-            previous_ngram = previous_tokens[-(i+1):]  # adjust based on n-gram level
+            previous_ngram = previous_tokens[-(i+1):] 
             probabilities = self.return_probabilities(previous_ngram, n_gram_counts, nplus1_gram_counts, vocabulary, smoothing_factor)
 
             for word, prob in probabilities.items():
@@ -84,7 +84,7 @@ class Ngram:
             for sentence in data:
                 for word in sentence:
                     vocab.add(word)
-            vocab.update(["<eos>", "<unk>"])
+            vocab.update(["<eos>", "<unk>", "<pad>", "<sos>"])
             return vocab
              
     def build_ngram_counts(self, data, max_n):
@@ -93,7 +93,8 @@ class Ngram:
         for n in range(1, max_n + 1):
             counts = defaultdict(int)
             for sentence in data:
-                padded = ["<s>"] * (n - 1) + sentence + ["<eos>"]
+                # Add <sos> token and pad shorter contexts with <pad>
+                padded = ["<pad>"] * (n - 2) + ["<sos>"] + sentence + ["<eos>"]
                 for i in range(len(padded) - n + 1):
                     ngram = tuple(padded[i:i+n])
                     counts[ngram] += 1
