@@ -70,8 +70,8 @@ class SMSPredictorApp:
         
         self.entry.bind("<Button-1>", self.on_entry_click)
 
-        self.status_var = tk.StringVar(value="Saved 0/0  (0.00%)")
-        status_label = tk.Label(self.root, textvariable=self.status_var,
+        self.status_bar = tk.StringVar(value="Saved 0/0  (0.00%)")
+        status_label = tk.Label(self.root, textvariable=self.status_bar,
                                 font=("Helvetica", 10), anchor="w")
         status_label.pack(fill="x", side="bottom", padx=8, pady=4)
 
@@ -111,7 +111,7 @@ class SMSPredictorApp:
             rate = 100 * self.saved_keystrokes / (self.total_keystrokes + self.saved_keystrokes)
         else:
             rate = 0.0
-        self.status_var.set(
+        self.status_bar.set(
             f"Saved {self.saved_keystrokes}/{self.total_keystrokes + self.saved_keystrokes}  ({rate:.2f}%)"
         )
 
@@ -196,6 +196,7 @@ class SMSPredictorApp:
             if msg:
                 self.add_message(msg, user=True)
                 self.entry.delete(0, tk.END)
+                self.update_suggestions()
             return
         self.update_suggestions()
 
