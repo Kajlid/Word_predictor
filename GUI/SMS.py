@@ -6,8 +6,6 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import tkinter as tk
 from tkinter import ttk
-
-from GUI import GUI
 from Models.LSTM import LSTM
 from Models.Ngram import Ngram
 from Data.data_preparation import word_index_mappings, read_embeddings, get_sentence_tokens
@@ -20,6 +18,8 @@ class SMSPredictorApp:
         self.vocab = vocab
         self.nr_suggestions = nr_suggestions
 
+        self.total_keystrokes = 0
+        self.saved_keystrokes = 0
         # Main window
         self.root = tk.Tk()
         self.root.title("SMS Word Predictor")
@@ -70,6 +70,10 @@ class SMSPredictorApp:
         
         self.entry.bind("<Button-1>", self.on_entry_click)
 
+        self.status_var = tk.StringVar(value="Saved 0/0  (0.00%)")
+        status_label = tk.Label(self.root, textvariable=self.status_var,
+                                font=("Helvetica", 10), anchor="w")
+        status_label.pack(fill="x", side="bottom", padx=8, pady=4)
 
         self.buttons = []
         for i in range(self.nr_suggestions):
@@ -102,6 +106,14 @@ class SMSPredictorApp:
             self.entry.config(fg="grey")
             self.placeholder_active = True
 
+    def update_status(self):
+        if self.total_keystrokes > 0:
+            rate = 100 * self.saved_keystrokes / (self.total_keystrokes + self.saved_keystrokes)
+        else:
+            rate = 0.0
+        self.status_var.set(
+            f"Saved {self.saved_keystrokes}/{self.total_keystrokes + self.saved_keystrokes}  ({rate:.2f}%)"
+        )
 
     def update_suggestions(self):
         if self.model_var.get() == "Choose a model":
@@ -174,6 +186,11 @@ class SMSPredictorApp:
     def on_key(self, event=None):
         if self.placeholder_active:
             return
+
+        if event and len(event.char) == 1 and event.keysym != "Return":
+            self.total_keystrokes += 1
+            self.update_status()
+
         if event and event.keysym == "Return":
             msg = self.entry.get().strip()
             if msg:
@@ -187,17 +204,26 @@ class SMSPredictorApp:
         text = self.entry.get().lower()
 
         if not text.endswith(" ") and " " in text:
-            text = text[:text.rfind(" ")+1]
+            base = text[:text.rfind(" ") + 1]
+            prefix = text[text.rfind(" ") + 1:]
         elif not text.endswith(" "):
-            text = ""
+            base = ""
+            prefix = text
+        else:
+            base = text
+            prefix = ""
 
-        new_text = text + word + " "
+        saved = max(0, len(word) - len(prefix))
+        self.saved_keystrokes += saved
+        self.update_status()
+
+        # complete the word
+        new_text = base + word + " "
         self.entry.delete(0, tk.END)
         self.entry.insert(0, new_text)
-
+        self.update_suggestions()
 
         #self.add_message(word, user=True)
-        self.update_suggestions()
 
     def run(self):
         self.root.mainloop()
@@ -208,7 +234,7 @@ if __name__ == "__main__":
     embeddings = read_embeddings('Data/glove.6B.50d.txt', tok2id, 50)
     
     # Load LSTM model
-    saved_model = torch.load('lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4_L2_1e-5.pth')
+    saved_model = torch.load('lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4_L2_1e-6.pth')
 
     lstm_model = LSTM(
         input_size=50,
