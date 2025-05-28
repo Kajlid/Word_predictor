@@ -150,7 +150,7 @@ if __name__ == "__main__":
     total_tokens = sum(ctr.values())
 
     # 2) Walk down the sorted list until we hit our coverage target
-    coverage_target = 0.80
+    coverage_target = 0.90
     cumulative = 0
     most_common = []
     for tok, freq in ctr.most_common():  # sorted descending by freq
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     tok2id = {w: i for i, w in enumerate(id2tok)}
 
     embeddings = read_embeddings('Data/glove.6B.50d.txt', tok2id, 50)
-    saved_model = torch.load('lstm_model_10_epochs_input50_numlayers2_hidden512_lr0.0001_batchsize64_L2_1e-6.pth')
+    saved_model = torch.load('finetuned.pth')
 
     model = LSTM(
         input_size=50,

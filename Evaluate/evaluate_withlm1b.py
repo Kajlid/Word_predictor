@@ -12,7 +12,7 @@ from collections import Counter
 def main():
 
 
-    saved_model = torch.load('lstm_model_30_epochs_input50_numlayers2_hidden512_lr0.0001_batchsize64_L2_1e-6.pth')
+    saved_model = torch.load('finetuned.pth')
     train_data = load_dataset('lm1b', split='train[:100000]', trust_remote_code=True)
 
 
