@@ -66,8 +66,6 @@ class SMSPredictorApp:
         self.placeholder_active = True
 
         self.sugg_frame = tk.Frame(self.root, bg="#f0f0f0")
-        
-        self.entry.bind("<Button-1>", self.on_entry_click)
 
         self.status_bar = tk.StringVar(value="Saved 0/0  (0.00%)")
         status_label = tk.Label(self.root, textvariable=self.status_bar,
@@ -118,7 +116,11 @@ class SMSPredictorApp:
         if self.model_var.get() == "Choose a model":
             return   # skip suggestion update if a model is not selected
         
-        text = self.entry.get().lower()  
+        text = self.entry.get().lower()
+        # Treat placeholder as empty input
+        if self.placeholder_active or text == self.placeholder_text.lower():
+            text = ""  
+            
         context, prefix = self.split_input(text)
         
         specials = {'<pad>','<unk>','<sos>','<eos>'}
@@ -136,9 +138,13 @@ class SMSPredictorApp:
         elif selected_model in ("Bigram", "Trigram"):
             ngram_level = 2 if selected_model == "Bigram" else 3
             if prefix == "":
-                suggs = self.ngram_model.get_top_suggestions(context, self.ngram_counts[:ngram_level], self.vocab, k=self.nr_suggestions)
+                raw = self.ngram_model.get_top_suggestions(context, self.ngram_counts[:ngram_level], self.vocab, k=self.nr_suggestions)
             else:
-                suggs = self.ngram_model.get_top_suggestions(context, self.ngram_counts[:ngram_level], self.vocab, k=self.nr_suggestions, started_word=prefix)
+               raw = self.ngram_model.get_top_suggestions(context, self.ngram_counts[:ngram_level], self.vocab, k=self.nr_suggestions, started_word=prefix)
+                
+            # filter out special tokens
+            suggs = [w for w in raw if w not in specials]
+            
         else:
             suggs = []
 
@@ -167,9 +173,6 @@ class SMSPredictorApp:
         self.canvas.update_idletasks()
         self.canvas.yview_moveto(1.0)
 
-    def on_entry_click(self, event=None):
-        if self.model_var.get() != "Choose a model":
-            self.sugg_frame.pack(fill="x", padx=8, pady=(0,8))
 
     def on_model_change(self):
         if self.model_var.get() == "Choose a model":
@@ -180,6 +183,7 @@ class SMSPredictorApp:
         else:
             for b in self.buttons:
                 b.config(state="normal")
+            self.sugg_frame.pack(fill="x", padx=8, pady=(0, 8)) 
             self.update_suggestions()
 
     def on_key(self, event=None):
