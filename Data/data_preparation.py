@@ -13,24 +13,17 @@ def create_dataframe(filename):
     if 'Unnamed: 0' in df.columns:
         df = df.drop(columns=['Unnamed: 0'])
     
+    # Drop answers as they contain duplicates and pose data leakage risk
     if 'answers' in df.columns:
         df = df.drop(columns=['answers'])
-    
-    # Concatenate questions and answers vertically (for creating train and val data)
-    # stacked_df = pd.concat([df['question'], df['answer']]).dropna().reset_index(drop=True)
     
     return df.dropna().reset_index(drop=True)
 
 
 def get_sentence_tokens(filename):
-    """ Get a list of sentences as lists of tokens for n-gram.
+    # Get a list of sentences as lists of tokens for n-gram.
+    # Return sentence_tokens (list): list of lists of tokens (list of sentences).
 
-    Args:
-        filename (string): path to raw text dataset.
-
-    Returns:
-        sentence_tokens (list): list of lists of tokens (list of sentences).
-    """
     sentence_tokens = []
     with open(filename, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
@@ -80,10 +73,8 @@ def write_sentences(path, data):
 def train_val_split(filename, train_ratio=0.95, seed=42, train_out="conv_train.csv", val_out="conv_val.csv"):
     sentences = create_dataframe(filename)
     
-    # Shuffle data
+    # Shuffle data with a seed for reproducability
     sentences = sentences.sample(frac=1, random_state=seed).reset_index(drop=True)
-    # random.seed(seed)
-    # random.shuffle(sentences)
 
     split_idx = int(len(sentences) * train_ratio)
     train_sentences = sentences.iloc[:split_idx]
@@ -111,9 +102,9 @@ class FullSentenceDataset(Dataset):
 
     def __getitem__(self, idx):
         s = self.sents[idx]
-        # input is everything but the last token
+        # Input is everything but the last token
         x = torch.tensor(s[:-1], dtype=torch.long)
-        # target is everything but the first token
+        # Target is everything but the first token
         y = torch.tensor(s[1:],  dtype=torch.long)
         return x, y
 
@@ -133,7 +124,4 @@ if __name__== "__main__":
     
     # print(len(sentence_tokens))
     # print(sentence_tokens[1000])
-    
-
-    
     

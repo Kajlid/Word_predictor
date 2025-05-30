@@ -66,7 +66,6 @@ class SMSPredictorApp:
         self.placeholder_active = True
 
         self.sugg_frame = tk.Frame(self.root, bg="#f0f0f0")
-        # self.sugg_frame.pack(fill="x", padx=8, pady=(0,8))
         
         self.entry.bind("<Button-1>", self.on_entry_click)
 
@@ -224,7 +223,7 @@ class SMSPredictorApp:
         self.entry.insert(0, new_text)
         self.update_suggestions()
 
-        #self.add_message(word, user=True)
+        # self.add_message(word, user=True)
 
     def run(self):
         self.root.mainloop()

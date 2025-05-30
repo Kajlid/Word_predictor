@@ -104,7 +104,6 @@ class LSTM(torch.nn.Module):
                 ax.legend()
                 ax.grid(True)
                 plt.pause(0.1)
-                # plt.show()
 
     def _prime_model(self, context_tokens):
 
@@ -113,7 +112,6 @@ class LSTM(torch.nn.Module):
 
         h, c = self.init_hidden(1)
         for t in context_tokens:
-            # carry over h and c here
             idx = self.tok2id.get(t, self.tok2id['<unk>'])
             x = torch.tensor([[idx]], device=self.device)
             logits, h, c = self(x, h, c)
@@ -150,7 +148,7 @@ class LSTM(torch.nn.Module):
 
 
             NEG_INF = -1e9
-            # the ~ flips the boolean tensor.
+            # The ~ flips the boolean tensor.
             masked = probs.masked_fill(~mask, NEG_INF)  # [V]
 
             top_vals, top_ids = torch.topk(masked, min(k, mask.sum().item()))

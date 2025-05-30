@@ -33,7 +33,6 @@ class GUI:
 
         self.update_suggestions()
 
-          # track which words are shown"""
 
     def split_input(self, text):
         tokens = text.strip().split()
@@ -58,10 +57,10 @@ class GUI:
         specials = {'<pad>', '<unk>', '<sos>', '<eos>'}
         suggs = [(w, p) for (w, p) in suggs if w not in specials]
 
-        # then only take the words for display
+        # Only take the words for display
         display_words = [w for w, _ in suggs]
 
-        # update buttons
+        # Update buttons
         for i, btn in enumerate(self.sugg_buttons):
             if i < len(suggs):
                 btn.config(text=display_words[i])
@@ -78,18 +77,18 @@ class GUI:
         word = self.current_suggestions[idx]
         text = self.entry.get().lower()
 
-        # remove any partial prefix
+        # Remove any partial prefix
         if not text.endswith(" ") and " " in text:
             text = text[:text.rfind(" ")+1]
         elif not text.endswith(" "):
             text = ""
 
-        # insert the chosen word + a space
+        # Insert the chosen word + a space
         new_text = text + word + " "
         self.entry.delete(0, tk.END)
         self.entry.insert(0, new_text)
 
-        # **now** refresh suggestions for the new text!
+        # Refresh suggestions for the new text
         self.update_suggestions()
 
     def run(self):

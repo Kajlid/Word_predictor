@@ -47,8 +47,8 @@ def evaluate_saved_keystrokes_lstm(model, sentences, k_full=3, k_char=3):
             probs = F.softmax(logits, dim=-1)
 
             saved_in_sentence = 0
-            for i, word in enumerate(sent[1:-1]):      # first word is <sos> token and last is <eos>
-                word_probs = probs[i]  # shape: (V,)
+            for i, word in enumerate(sent[1:-1]):    # exclude first, <sos> token and last word, <eos>
+                word_probs = probs[i]  
                 vocab_size = word_probs.shape[0]
                 topk_full = torch.topk(word_probs, min(k_full, vocab_size))
                 full_suggestions = [model.id2tok[idx.item()] for idx in topk_full.indices]
@@ -177,6 +177,8 @@ if __name__ == '__main__':
     print(f"Average saved keystrokes per sentence: {lstm_result['avg_saved_per_sentence']:.2f}")
     print(f"Percentage saved per sentence: {100 * lstm_result['avg_saved_per_sentence'] / lstm_result['avg_keystrokes_per_sentence']:.2f}%")
     print("\nToken-Level Logs (First 5 Sentences)")
+    
+    # Print sentence logs for qualititave analysis
     for i, (sent, logs) in enumerate(lstm_logs[:5]):
         print(f"\nSentence {i+1}: {' '.join(sent)}")
         for word, saved, method in logs:
@@ -194,6 +196,7 @@ if __name__ == '__main__':
     print(f"Average total keystrokes per sentence: {bigram_result['avg_keystrokes_per_sentence']:.2f}")
     print(f"Average saved keystrokes per sentence: {bigram_result['avg_saved_per_sentence']:.2f}")
     print(f"Percentage saved per sentence: {100 * bigram_result['avg_saved_per_sentence'] / bigram_result['avg_keystrokes_per_sentence']:.2f}%")
+    
     print("\nToken-Level Logs (First 5 Sentences)")
     for i, (sent, logs) in enumerate(bigram_logs[:5]):
         print(f"\nSentence {i+1}: {' '.join(sent)}")
@@ -211,6 +214,7 @@ if __name__ == '__main__':
     print(f"Average total keystrokes per sentence: {trigram_result['avg_keystrokes_per_sentence']:.2f}")
     print(f"Average saved keystrokes per sentence: {trigram_result['avg_saved_per_sentence']:.2f}")
     print(f"Percentage saved per sentence: {100 * trigram_result['avg_saved_per_sentence'] / trigram_result['avg_keystrokes_per_sentence']:.2f}%")
+    
     print("\nToken-Level Logs (First 5 Sentences)")
     for i, (sent, logs) in enumerate(trigram_logs[:5]):
         print(f"\nSentence {i+1}: {' '.join(sent)}")
@@ -228,6 +232,7 @@ if __name__ == '__main__':
     print(f"Average total keystrokes per sentence: {fourgram_result['avg_keystrokes_per_sentence']:.2f}")
     print(f"Average saved keystrokes per sentence: {fourgram_result['avg_saved_per_sentence']:.2f}")
     print(f"Percentage saved per sentence: {100 * fourgram_result['avg_saved_per_sentence'] / fourgram_result['avg_keystrokes_per_sentence']:.2f}%")
+    
     print("\nToken-Level Logs (First 5 Sentences)")
     for i, (sent, logs) in enumerate(fourgram_logs[:5]):
         print(f"\nSentence {i+1}: {' '.join(sent)}")
@@ -245,12 +250,14 @@ if __name__ == '__main__':
     print(f"Average total keystrokes per sentence: {fivegram_result['avg_keystrokes_per_sentence']:.2f}")
     print(f"Average saved keystrokes per sentence: {fivegram_result['avg_saved_per_sentence']:.2f}")
     print(f"Percentage saved per sentence: {100 * fivegram_result['avg_saved_per_sentence'] / fivegram_result['avg_keystrokes_per_sentence']:.2f}%")
+    
     print("\nToken-Level Logs (First 5 Sentences)")
     for i, (sent, logs) in enumerate(fivegram_logs[:5]):
         print(f"\nSentence {i+1}: {' '.join(sent)}")
         for word, saved, method in logs:
             print(f"  Word: {word:<15} | Saved: {saved:<2} | Method: {method}")
     
+    # Bar plot
     models = ['LSTM', 'Bigram', 'Trigram', '4-gram', '5-gram']
     bar_colors = ['aquamarine', 'turquoise', 'mediumturquoise', 'lightseagreen', 'darkturquoise']
     saves = [lstm_result['saved_rate'], bigram_result['saved_rate'], trigram_result['saved_rate'], fourgram_result['saved_rate'], fivegram_result['saved_rate']]
