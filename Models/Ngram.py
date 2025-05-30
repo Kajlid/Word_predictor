@@ -93,7 +93,7 @@ class Ngram:
         for n in range(1, max_n + 1):
             counts = defaultdict(int)
             for sentence in data:
-                # Add <sos> token and pad shorter contexts with <pad>
+                # Add <sos> and <eos> tokens and pad shorter contexts with <pad>
                 padded = ["<pad>"] * (n - 2) + ["<sos>"] + sentence + ["<eos>"]
                 for i in range(len(padded) - n + 1):
                     ngram = tuple(padded[i:i+n])
