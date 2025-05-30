@@ -118,8 +118,9 @@ class LSTM(torch.nn.Module):
 
         return logits, h, c
 
-    def predict(self, context_tokens, n_candidates=None):
+    def predict(self, context_tokens, n_candidates=None, filter_specials=False):
         self.eval()
+        specials = {'<unk>', '<pad>', '<sos>', '<eos>'}
         with torch.no_grad():
             logits, h, c = self._prime_model(context_tokens)
 
@@ -127,9 +128,20 @@ class LSTM(torch.nn.Module):
 
             if n_candidates is None:
                 n_candidates = probs.size(0)
-            topk = torch.topk(probs, n_candidates)
-            return [(self.id2tok[idx.item()], topk.values[i].item())
-                    for i, idx in enumerate(topk.indices)]
+
+            
+            sorted_ids = torch.argsort(probs, descending=True)
+
+            results = []
+            for idx in sorted_ids:
+                tok = self.id2tok[idx.item()]
+                if filter_specials and tok in specials:
+                    continue
+                results.append((tok, probs[idx].item()))
+                if len(results) >= n_candidates:
+                    break
+
+            return results
 
     def complete_current_word(self, context_tokens, prefix, k=5):
         

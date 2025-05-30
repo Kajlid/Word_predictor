@@ -128,7 +128,7 @@ class SMSPredictorApp:
 
         if selected_model == "LSTM":
             if prefix == "":
-                raw = self.lstm_model.predict(context, self.nr_suggestions)
+                raw = self.lstm_model.predict(context, self.nr_suggestions, filter_specials=True)
             else:
                 raw = self.lstm_model.complete_current_word(context, prefix, self.nr_suggestions)
 
