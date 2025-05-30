@@ -66,7 +66,8 @@ class Ngram:
                 if started_word and not word.startswith(started_word):
                     continue
                 if word not in suggestions or prob > suggestions[word]:
-                    suggestions[word] = prob
+                    if word != started_word:
+                        suggestions[word] = prob
 
         return suggestions
     
