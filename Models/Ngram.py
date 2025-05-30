@@ -52,7 +52,7 @@ class Ngram:
         return suggestion, max_prob
 
     
-    def get_all_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor=1.0, started_word=None):
+    def get_all_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor=1.0, started_word=""):
         suggestions = {}
         
         for i in range(len(n_gram_counts_list) - 1):
@@ -70,7 +70,7 @@ class Ngram:
 
         return suggestions
     
-    def get_top_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, k=3, smoothing_factor=1.0, started_word=None):
+    def get_top_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, k=3, smoothing_factor=1.0, started_word=""):
         suggestions_dict = self.get_all_suggestions(previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor, started_word)
 
         # Sort by probability (descending)
