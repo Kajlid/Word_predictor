@@ -52,7 +52,7 @@ class Ngram:
         return suggestion, max_prob
 
     
-    def get_all_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor=1.0, started_word=""):
+    def get_all_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor=1.0, started_word="", filter_specials=False):
         suggestions = {}
         
         for i in range(len(n_gram_counts_list) - 1):
@@ -60,19 +60,27 @@ class Ngram:
             nplus1_gram_counts = n_gram_counts_list[i + 1]
 
             previous_ngram = previous_tokens[-(i+1):] 
+                
             probabilities = self.return_probabilities(previous_ngram, n_gram_counts, nplus1_gram_counts, vocabulary, smoothing_factor)
+            specials = {'<unk>', '<pad>', '<sos>', '<eos>'}
 
             for word, prob in probabilities.items():
                 if started_word and not word.startswith(started_word):
                     continue
                 if word not in suggestions or prob > suggestions[word]:
+                    if filter_specials and word in specials:  # special tokens will be filtered out in the GUI 
+                        continue
+                    # exclude the full word itself from suggestions
                     if word != started_word:
                         suggestions[word] = prob
 
         return suggestions
     
     def get_top_suggestions(self, previous_tokens, n_gram_counts_list, vocabulary, k=3, smoothing_factor=1.0, started_word=""):
-        suggestions_dict = self.get_all_suggestions(previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor, started_word)
+        if started_word == "" and (not previous_tokens or len(previous_tokens) < self.n - 1):
+            previous_tokens = ["<sos>"]   # if no context is given, assume start of sentence
+            
+        suggestions_dict = self.get_all_suggestions(previous_tokens, n_gram_counts_list, vocabulary, smoothing_factor, started_word, filter_specials=True)
 
         # Sort by probability (descending)
         word_candidates = [word for word, _ in sorted(suggestions_dict.items(), key=lambda x: -x[1])]
