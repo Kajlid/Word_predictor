@@ -11,7 +11,7 @@ import timeit
 
 def main():
     input_size = 50
-    hidden_size = 128
+    hidden_size = 256
     num_layers = 2
 
     device = torch.device(input('Enter device: cpu or mps: '))
@@ -36,19 +36,19 @@ def main():
     train_sentence_ids = [numericalize_sentence(s, tok2id, tok2id['<unk>']) for s in train_sentences]
     train_ds = FullSentenceDataset(train_sentence_ids, tok2id['<pad>'])
     train_loader = torch.utils.data.DataLoader(
-        train_ds, batch_size=4, shuffle=True, num_workers=4, pin_memory=True, collate_fn=collate_full_sentences
+        train_ds, batch_size=1, shuffle=True, num_workers=4, pin_memory=True, collate_fn=collate_full_sentences
     )
     
     val_sentence_ids = [numericalize_sentence(s, tok2id, tok2id['<unk>']) for s in val_sentences]
     val_ds = FullSentenceDataset(val_sentence_ids, tok2id['<pad>'])
     val_loader = torch.utils.data.DataLoader(
-        val_ds, batch_size=4, shuffle=True, num_workers=4, pin_memory=True, collate_fn=collate_full_sentences
+        val_ds, batch_size=1, shuffle=True, num_workers=4, pin_memory=True, collate_fn=collate_full_sentences
     )
 
     model = LSTM(input_size, hidden_size, num_layers, output_size, embeddings, tok2id, id2tok, device=device)
 
-    model.train_model(train_loader, Adam(model.parameters(), lr=0.0001, weight_decay=1e-6), torch.nn.CrossEntropyLoss(), epochs, val_loader, plot_training=True)
-    file_path = 'lstm_model_30_epochs_input50_numlayers2_hidden128_lr0.0001_batchsize4_L2_1e-6.pth'
+    model.train_model(train_loader, Adam(model.parameters(), lr=0.0001, weight_decay=1e-5), torch.nn.CrossEntropyLoss(), epochs, val_loader, plot_training=True)
+    file_path = 'fixed_lstm_model_30_epochs_input50_numlayers2_hidden256_lr0.0001_batchsize1_L2_1e-5.pth'
     torch.save(model.state_dict(), file_path)
     print(f"Model saved to {file_path}")
     start = timeit.default_timer()
