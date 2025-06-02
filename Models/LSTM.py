@@ -81,7 +81,22 @@ class LSTM(torch.nn.Module):
                         val_tokens += y_val.numel()
                     avg_val_loss = val_loss / val_tokens
                     val_losses.append(avg_val_loss)
-                    
+
+                    if plot_training:
+                        # Update plot
+                        ax.clear()
+                        ax.plot(train_losses, label="Train Loss", color='blue')
+                        if val_loader:
+                            ax.plot(val_losses, label="Validation Loss", color='red')
+                        ax.set_xlabel("Epoch")
+                        ax.set_ylabel("Loss")
+                        ax.set_title("Loss Curve")
+                        ax.legend()
+                        ax.grid(True)
+                        plt.pause(0.1)
+                        plt.savefig(f'epoch_{epoch}.png')
+
+
                      # Early stopping
                     if avg_val_loss < best_val_loss:
                         best_val_loss = avg_val_loss
@@ -92,23 +107,14 @@ class LSTM(torch.nn.Module):
                             print("Early stopping triggered.")
                             break
             
-            if plot_training:                     
-                # Update plot
-                ax.clear()
-                ax.plot(train_losses, label="Train Loss", color='blue')
-                if val_loader:
-                    ax.plot(val_losses, label="Validation Loss", color='red')
-                ax.set_xlabel("Epoch")
-                ax.set_ylabel("Loss")
-                ax.set_title("Loss Curve")
-                ax.legend()
-                ax.grid(True)
-                plt.pause(0.1)
+
 
     def _prime_model(self, context_tokens):
 
         if not context_tokens:
             context_tokens = ['<sos>']
+        elif context_tokens[0] != '<sos>':
+            context_tokens = ['<sos>'] + context_tokens
 
         h, c = self.init_hidden(1)
         for t in context_tokens:
