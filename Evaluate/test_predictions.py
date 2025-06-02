@@ -153,7 +153,7 @@ def evaluate_saved_keystrokes_ngram(ngram_model, sentences, ngram_counts_list, v
 if __name__ == '__main__':
     tok2id, id2tok = word_index_mappings()
     embeddings = read_embeddings('Data/glove.6B.50d.txt', tok2id, 50)
-    saved_model = torch.load('fixed_lstm_model_30_epochs_input50_numlayers2_hidden256_lr0.0001_batchsize1_L2_1e-5.pth')
+    saved_model = torch.load('final.pth')
 
     model = LSTM (
         input_size=50,
@@ -185,7 +185,7 @@ if __name__ == '__main__':
             print(f"  Word: {word:<15} | Saved: {saved:<2} | Method: {method}")
     
     print()
-    exit()
+
     print("Bigram performance:")
     bigram_model = Ngram(n=2)
     train_sentences = get_sentence_tokens('Data/Datasets/conv_train.csv')

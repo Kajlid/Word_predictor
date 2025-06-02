@@ -238,7 +238,7 @@ if __name__ == "__main__":
     embeddings = read_embeddings('Data/glove.6B.50d.txt', tok2id, 50)
     
     # Load LSTM model
-    saved_model = torch.load('fixed_lstm_model_30_epochs_input50_numlayers2_hidden256_lr0.0001_batchsize1_L2_1e-5.pth')
+    saved_model = torch.load('final.pth')
 
     lstm_model = LSTM(
         input_size=50,
