@@ -53,9 +53,9 @@ To run the code, you will need a file with pretrained GloVe embeddings that are 
 
 - Data/glove.6B.50d.txt (pretrained GloVe embeddings, has to be downloaded and placed in Data/ manually, see step 3)
 
-- Data/Datasets/conv_train.csv (train set for N-gram model)
+- Data/Datasets/conv_train.csv (train set)
 
-- Data/Datasets/conv_val.csv (validation set for N-gram model)
+- Data/Datasets/conv_val.csv (validation set)
 
 ## Run the GUI
 To start the GUI window, run:
