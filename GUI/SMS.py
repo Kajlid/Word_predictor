@@ -20,6 +20,7 @@ class SMSPredictorApp:
 
         self.total_keystrokes = 0
         self.saved_keystrokes = 0
+        
         # Main window
         self.root = tk.Tk()
         self.root.title("SMS Word Predictor")
@@ -114,11 +115,11 @@ class SMSPredictorApp:
 
     def update_status(self):
         if self.total_keystrokes > 0:
-            rate = 100 * self.saved_keystrokes / (self.total_keystrokes + self.saved_keystrokes)
+            rate = 100 * self.saved_keystrokes / (self.total_keystrokes) 
         else:
             rate = 0.0
         self.status_bar.set(
-            f"Saved {self.saved_keystrokes}/{self.total_keystrokes + self.saved_keystrokes}  ({rate:.2f}%)"
+            f"Saved {self.saved_keystrokes}/{self.total_keystrokes}  ({rate:.2f}%)"
         )
 
     def update_suggestions(self):
@@ -199,10 +200,6 @@ class SMSPredictorApp:
         if self.placeholder_active:
             return
 
-        if event and len(event.char) == 1 and event.keysym != "Return":
-            self.total_keystrokes += 1
-            self.update_status()
-
         if event and event.keysym == "Return":
             msg = self.entry.get().strip()
             if msg:
@@ -210,6 +207,15 @@ class SMSPredictorApp:
                 self.entry.delete(0, tk.END)
                 self.update_suggestions()
             return
+        
+        # Count total characters typed including spaces
+        text = self.entry.get().lower()
+        if self.placeholder_active or text == self.placeholder_text:
+            self.total_keystrokes = 0
+        else:
+            self.total_keystrokes = len(text)
+        self.update_status()
+        
         self.update_suggestions()
 
     def on_suggest(self, idx):
@@ -228,21 +234,28 @@ class SMSPredictorApp:
 
         saved = max(0, len(word) - len(prefix))
         self.saved_keystrokes += saved
-        self.update_status()
 
-        # complete the word
+        # Complete the word
         new_text = base + word + " "
         self.entry.delete(0, tk.END)
         self.entry.insert(0, new_text)
         self.update_suggestions()
+        
+        # Count total characters typed including spaces
+        text = self.entry.get().lower()
+        
+        if self.placeholder_active or text == self.placeholder_text:
+            self.total_keystrokes = 0
+        else:
+            self.total_keystrokes = len(text)
 
-        # self.add_message(word, user=True)
+        self.update_status()
+
         
     def reset_keystrokes(self):
         self.total_keystrokes = 0
         self.saved_keystrokes = 0
         self.update_status()
-
 
 
     def run(self):
