@@ -44,7 +44,7 @@ To run the code, you will need a file with pretrained GloVe embeddings that are 
     You can download the GloVe embeddings from:
     https://nlp.stanford.edu/projects/glove/
 
-    Download 6B.zip and move the file ```glove.6b.50b.txt``` to the ```Data``` directory to make sure that it gets the relative path: 
+    Download glove.6B.zip and move the file ```glove.6b.50b.txt``` to the ```Data``` directory to make sure that it gets the relative path: 
 ```Data/glove.6B.50d.txt```.
 
 4) Make sure the following files exist:
