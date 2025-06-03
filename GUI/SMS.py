@@ -56,7 +56,7 @@ class SMSPredictorApp:
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
-        self.entry = tk.Entry(self.root, font=("Helvetica", 16), fg="grey")
+        self.entry = tk.Entry(self.root, font=("Arial", 16), fg="grey")
         self.entry.pack(fill="x", padx=8, pady=(4,0))
         self.entry.bind("<KeyRelease>", self.on_key)
         self.entry.insert(0, "Write something here")
@@ -67,20 +67,29 @@ class SMSPredictorApp:
 
         self.sugg_frame = tk.Frame(self.root, bg="#f0f0f0")
 
-        self.status_bar = tk.StringVar(value="Saved 0/0  (0.00%)")
-        status_label = tk.Label(self.root, textvariable=self.status_bar,
-                                font=("Helvetica", 10), anchor="w")
-        status_label.pack(fill="x", side="bottom", padx=8, pady=4)
-
         self.buttons = []
         for i in range(self.nr_suggestions):
             b = tk.Button(self.sugg_frame,
-                          font=("Helvetica", 14),
+                          font=("Verdana", 14),
                           command=lambda j=i: self.on_suggest(j))
             b.pack(side="left", padx=4)
             self.buttons.append(b)
-
+            
         self.current_suggestions = []
+        
+        # Status bar and reset button
+        self.status_bar = tk.StringVar(value="Saved 0/0  (0.00%)")
+        
+        bottom_frame = tk.Frame(self.root)
+        bottom_frame.pack(fill="x", side="bottom", padx=8, pady=4)
+
+        status_label = tk.Label(bottom_frame, textvariable=self.status_bar,
+                                font=("Verdana", 10), anchor="w")
+        status_label.pack(side="left", fill="x", expand=True)
+
+        reset_button = tk.Button(bottom_frame, text="Reset", command=self.reset_keystrokes)
+        reset_button.pack(side="right")
+
 
     def split_input(self, text):
         toks = text.strip().split()
@@ -161,7 +170,7 @@ class SMSPredictorApp:
     def add_message(self, text, user=True):
         bubble = tk.Label(self.inner, text=text,
                           wraplength=240, justify="left",
-                          font=("Helvetica",12),
+                          font=("Verdana",12),
                           padx=10, pady=6, bd=0)
         if user:
             bubble.config(bg="#32a852")
@@ -228,6 +237,13 @@ class SMSPredictorApp:
         self.update_suggestions()
 
         # self.add_message(word, user=True)
+        
+    def reset_keystrokes(self):
+        self.total_keystrokes = 0
+        self.saved_keystrokes = 0
+        self.update_status()
+
+
 
     def run(self):
         self.root.mainloop()
