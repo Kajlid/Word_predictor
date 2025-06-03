@@ -18,17 +18,15 @@ The project depends on the following libraries:
 
 - tqdm - for monitoring progress of certain operations
 
-- tkinter — for the creating GUI 
-
 - numpy — for numerical operations
 
 - matplotlib - for plotting graphs
 
-Other standard libraries: sys, os, collections, timeit, math, random.
+Other standard libraries: tkinter, sys, os, collections, timeit, math, random.
 
-If you don't have any of the packages installed, you can install them via pip or conda, preferably within an environment.
+If you don't have any of the packages installed, you can install them via pip or conda, preferably within an environment. If you are downloading nltk for the first time, you need to run ```nltk.download('punkt')``` in the codebase to be able to run ```word_tokenize``` in ```Data/data_preparation.py```. 
 
-The LSTM model was trained on a Macbook with an MPS device, but it also supports CUDA.
+The LSTM model was trained on a Macbook with MPS, but it also supports CUDA.
 
 ## Setup
 
@@ -42,11 +40,12 @@ cd Word_predictor
 2) Install dependencies, as described above.
 
 3) Download GloVe embeddings:
-To run the code, you will need a file with pretrained GloVe embeddings that are available online in and make sure that it gets the relative path: 
-```Data/glove.6B.50d.txt```.
-
+To run the code, you will need a file with pretrained GloVe embeddings that are available online.
     You can download the GloVe embeddings from:
-    https://www.kaggle.com/datasets/watts2/glove6b50dtxt 
+    https://nlp.stanford.edu/projects/glove/
+
+    Download 6B.zip and move the file ```glove.6b.50b.txt``` to the ```Data``` directory to make sure that it gets the relative path: 
+```Data/glove.6B.50d.txt```.
 
 4) Make sure the following files exist:
 - final.pth (trained and saved final LSTM model if you don't wish to train a new model)

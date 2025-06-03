@@ -277,7 +277,7 @@ if __name__ == "__main__":
         embeddings=embeddings,
         tok2id=tok2id,
         id2tok=id2tok,
-        device=torch.device('mps'),
+        device=torch.device('cpu'),
     )
 
     lstm_model.load_state_dict(saved_model)
