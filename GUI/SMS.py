@@ -20,6 +20,7 @@ class SMSPredictorApp:
 
         self.total_keystrokes = 0
         self.saved_keystrokes = 0
+        
         # Main window
         self.root = tk.Tk()
         self.root.title("SMS Word Predictor")
@@ -56,7 +57,7 @@ class SMSPredictorApp:
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
-        self.entry = tk.Entry(self.root, font=("Helvetica", 16), fg="grey")
+        self.entry = tk.Entry(self.root, font=("Arial", 16), fg="grey")
         self.entry.pack(fill="x", padx=8, pady=(4,0))
         self.entry.bind("<KeyRelease>", self.on_key)
         self.entry.insert(0, "Write something here")
@@ -67,20 +68,29 @@ class SMSPredictorApp:
 
         self.sugg_frame = tk.Frame(self.root, bg="#f0f0f0")
 
-        self.status_bar = tk.StringVar(value="Saved 0/0  (0.00%)")
-        status_label = tk.Label(self.root, textvariable=self.status_bar,
-                                font=("Helvetica", 10), anchor="w")
-        status_label.pack(fill="x", side="bottom", padx=8, pady=4)
-
         self.buttons = []
         for i in range(self.nr_suggestions):
             b = tk.Button(self.sugg_frame,
-                          font=("Helvetica", 14),
+                          font=("Verdana", 14),
                           command=lambda j=i: self.on_suggest(j))
             b.pack(side="left", padx=4)
             self.buttons.append(b)
-
+            
         self.current_suggestions = []
+        
+        # Status bar and reset button
+        self.status_bar = tk.StringVar(value="Saved 0/0  (0.00%)")
+        
+        bottom_frame = tk.Frame(self.root)
+        bottom_frame.pack(fill="x", side="bottom", padx=8, pady=4)
+
+        status_label = tk.Label(bottom_frame, textvariable=self.status_bar,
+                                font=("Verdana", 10), anchor="w")
+        status_label.pack(side="left", fill="x", expand=True)
+
+        reset_button = tk.Button(bottom_frame, text="Reset", command=self.reset_keystrokes)
+        reset_button.pack(side="right")
+
 
     def split_input(self, text):
         toks = text.strip().split()
@@ -105,11 +115,11 @@ class SMSPredictorApp:
 
     def update_status(self):
         if self.total_keystrokes > 0:
-            rate = 100 * self.saved_keystrokes / (self.total_keystrokes + self.saved_keystrokes)
+            rate = 100 * self.saved_keystrokes / (self.total_keystrokes) 
         else:
             rate = 0.0
         self.status_bar.set(
-            f"Saved {self.saved_keystrokes}/{self.total_keystrokes + self.saved_keystrokes}  ({rate:.2f}%)"
+            f"Saved {self.saved_keystrokes}/{self.total_keystrokes}  ({rate:.2f}%)"
         )
 
     def update_suggestions(self):
@@ -161,7 +171,7 @@ class SMSPredictorApp:
     def add_message(self, text, user=True):
         bubble = tk.Label(self.inner, text=text,
                           wraplength=240, justify="left",
-                          font=("Helvetica",12),
+                          font=("Verdana",12),
                           padx=10, pady=6, bd=0)
         if user:
             bubble.config(bg="#32a852")
@@ -190,10 +200,6 @@ class SMSPredictorApp:
         if self.placeholder_active:
             return
 
-        if event and len(event.char) == 1 and event.keysym != "Return":
-            self.total_keystrokes += 1
-            self.update_status()
-
         if event and event.keysym == "Return":
             msg = self.entry.get().strip()
             if msg:
@@ -201,6 +207,15 @@ class SMSPredictorApp:
                 self.entry.delete(0, tk.END)
                 self.update_suggestions()
             return
+        
+        # Count total characters typed including spaces
+        text = self.entry.get().lower()
+        if self.placeholder_active or text == self.placeholder_text:
+            self.total_keystrokes = 0
+        else:
+            self.total_keystrokes = len(text)
+        self.update_status()
+        
         self.update_suggestions()
 
     def on_suggest(self, idx):
@@ -219,15 +234,29 @@ class SMSPredictorApp:
 
         saved = max(0, len(word) - len(prefix))
         self.saved_keystrokes += saved
-        self.update_status()
 
-        # complete the word
+        # Complete the word
         new_text = base + word + " "
         self.entry.delete(0, tk.END)
         self.entry.insert(0, new_text)
         self.update_suggestions()
+        
+        # Count total characters typed including spaces
+        text = self.entry.get().lower()
+        
+        if self.placeholder_active or text == self.placeholder_text:
+            self.total_keystrokes = 0
+        else:
+            self.total_keystrokes = len(text)
 
-        # self.add_message(word, user=True)
+        self.update_status()
+
+        
+    def reset_keystrokes(self):
+        self.total_keystrokes = 0
+        self.saved_keystrokes = 0
+        self.update_status()
+
 
     def run(self):
         self.root.mainloop()
